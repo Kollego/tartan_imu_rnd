@@ -1,0 +1,18 @@
+[project]
+name = "tartan-imu-rnd"
+version = "0.1.0"
+description = "Simple cross-platform IMU velocity regression baseline"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "torch>=2.6",
+    "numpy>=2.0",
+    "pandas>=2.2",
+    "scikit-learn>=1.5",
+    "matplotlib>=3.9",
+    "nbformat>=5.10",
+    "nbclient>=0.10",
+    "ipykernel>=6.29",
+]
+
+[tool.uv]
+package = false
