@@ -48,7 +48,7 @@ def reference_budgets(frame, assignments, config):
     return pd.DataFrame(rows)
 
 
-def train_fold(dataset, frame, assignments, fold, config, output):
+def train_fold(dataset, frame, assignments, fold, config, output, on_metric=None):
     """Save fixed-step checkpoints and their metrics."""
     directory = Path(output) / f"fold_{fold}"
     directory.mkdir()
@@ -67,13 +67,22 @@ def train_fold(dataset, frame, assignments, fold, config, output):
     mean, std = compute_normalization(dataset.x[train_rows])
     normalization_seconds = time.perf_counter() - norm_started
     normalization_cpu_seconds = time.process_time() - norm_cpu_started
-    kwargs = {"hidden_sizes": config["hidden_sizes"]}
-    model = build_model("mlp", **kwargs, mean=mean, std=std)
+    model_name = config.get("model_name", "mlp")
+    kwargs = config.get("model_kwargs") or {"hidden_sizes": config["hidden_sizes"]}
+    model = build_model(model_name, **kwargs, mean=mean, std=std)
     train_set, val_set = Subset(dataset, train_rows), Subset(dataset, val_rows)
     val_frame = frame.iloc[val_rows].reset_index(drop=True)
     loader = DataLoader(train_set, batch_size=config["batch_size"], shuffle=True,
                         generator=torch.Generator().manual_seed(seed), num_workers=0,
                         drop_last=True)
+    if isinstance(dataset, IMUDataset):
+        # Batch indexing preserves DataLoader shuffles and avoids 256 Python
+        # calls and a tensor stack for each optimizer update.
+        def gather(indices):
+            rows = train_rows[indices]
+            return torch.from_numpy(dataset.x[rows]), torch.from_numpy(dataset.y[rows])
+        loader = DataLoader(range(len(train_rows)), batch_size=config["batch_size"], shuffle=True,
+                            generator=torch.Generator().manual_seed(seed), collate_fn=gather, drop_last=True)
     optimizer = torch.optim.Adam(model.parameters(), lr=config["learning_rate"],
                                  weight_decay=config["weight_decay"])
     zero = velocity_metrics(val_frame, np.zeros((len(val_frame), 3)))
@@ -130,10 +139,12 @@ def train_fold(dataset, frame, assignments, fold, config, output):
         history.append({"fold": fold, "step": step, "train_mse": interval_loss / interval_examples,
                         "cv_macro_ave": metrics["macro_ave"], "best_step_so_far": best_step,
                         "best_ave_so_far": best_ave, **compute})
+        if on_metric is not None:
+            on_metric(history[-1])
         interval_loss = 0.0
         interval_examples = 0
         checkpoint = {
-            "model_name": "mlp", "model_kwargs": kwargs,
+            "model_name": model_name, "model_kwargs": kwargs,
             "state_dict": {key: value.detach().cpu() for key, value in model.state_dict().items()},
             "fold": fold, "step": step, "seed": seed, "config": config,
             "cv_macro_ave": metrics["macro_ave"], "compute": compute,
