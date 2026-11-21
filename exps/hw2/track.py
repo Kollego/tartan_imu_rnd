@@ -3,9 +3,7 @@
 import argparse
 import json
 import subprocess
-from pathlib import Path
 
-import numpy as np
 from clearml import Task
 
 from exps.baseline.train_steps import write_json

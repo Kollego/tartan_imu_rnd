@@ -1,5 +1,6 @@
 """Refit the CV-selected generalist, evaluate official val once and write the submission."""
 
+import hashlib
 import json
 import subprocess
 import sys
@@ -59,9 +60,12 @@ def main():
         raise ValueError("Submission schema or row order differs from the official template")
     if not actual.window_id.is_unique or not np.isfinite(actual[["vx", "vy", "vz"]]).all().all():
         raise ValueError("Invalid submission rows")
-    write_json(output / "verified.json", {"variant": selection["variant"], "training_trajectories": train.traj_id.nunique(),
+    write_json(output / "verified.json", {"variant": selection["variant"], "training_trajectories": int(train.traj_id.nunique()),
+               "training_windows": len(train), "val_trajectories": int(val.traj_id.nunique()), "val_windows": len(val),
+               "submission_sha256": hashlib.sha256(submission.read_bytes()).hexdigest(),
                "val_macro_ave": metrics["macro_ave"], "val_per_platform": metrics["per_platform"],
                "test_rows": len(actual), "columns": list(actual.columns), "submission_uploaded": False})
+    (OUT / "official_val.json").write_bytes((output / "verified.json").read_bytes())
     print((output / "verified.json").read_text())
 
 

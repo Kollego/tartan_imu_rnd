@@ -1,0 +1,5 @@
+{
+  "variant": "temporal_gate",
+  "cv_mean": 0.42575385155102696,
+  "criterion": "minimum mean five-fold macro AVE, step 10000"
+}

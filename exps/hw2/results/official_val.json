@@ -1,0 +1,23 @@
+{
+  "variant": "temporal_gate",
+  "training_trajectories": 395,
+  "training_windows": 81931,
+  "val_trajectories": 80,
+  "val_windows": 23714,
+  "submission_sha256": "0b2e75ebda3c8ed2d74bd5632d97d9517da44ce77545a103e1e184790b2f1c70",
+  "val_macro_ave": 0.4518956152982233,
+  "val_per_platform": {
+    "car": 0.3824266168775458,
+    "dog": 0.28174346335993494,
+    "drone": 0.9606494204916197,
+    "human": 0.18276296046379278
+  },
+  "test_rows": 30644,
+  "columns": [
+    "window_id",
+    "vx",
+    "vy",
+    "vz"
+  ],
+  "submission_uploaded": false
+}

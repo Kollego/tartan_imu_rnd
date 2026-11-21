@@ -1,5 +1,6 @@
 """Reconstruct the paired CV table from complete, ID-checked OOF predictions."""
 
+import hashlib
 import json
 from pathlib import Path
 
@@ -28,6 +29,17 @@ def read_run(variant, platform):
     if is_archived(variant, platform):
         directory = archive(platform)
         pd.testing.assert_frame_equal(pd.read_csv(FOLDS), pd.read_csv(directory / "folds.csv"))
+        config = json.loads((directory / "config.json").read_text())
+        expected = config_for(variant, platform)
+        for key in ("seed", "folds", "platform", "hidden_sizes", "batch_size", "learning_rate",
+                    "weight_decay", "max_steps", "drop_last", "num_threads", "eval_every_steps"):
+            if config[key] != expected[key]:
+                raise ValueError(f"Archived protocol differs for {platform}: {key}")
+        environment = json.loads((directory / "environment.json").read_text())
+        for name, digest in environment["index_sha256"].items():
+            index = Path(expected["data_root"]) / "index" / name
+            if hashlib.sha256(index.read_bytes()).hexdigest() != digest:
+                raise ValueError(f"Index differs from the HW1 run: {index}")
         return (pd.read_csv(directory / "step_10000/oof_predictions.csv"),
                 pd.read_csv(directory / "history.csv"))
     folds = [ROOT / variant / platform / f"fold_{fold}" for fold in range(5)]
