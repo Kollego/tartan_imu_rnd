@@ -11,12 +11,12 @@ from exps.hw2.study import config_for
 from src.data import IMUDataset
 
 
-def plot_window(row, vectors):
+def plot_window(row, predictions, target):
     data_root = config_for("temporal_gate", "all")["data_root"]
     imu = IMUDataset(data_root, "train", row).x[0]
     seconds = np.arange(len(imu)) / 200
-    fig = plt.figure(figsize=(10.8, 4.7), layout="constrained")
-    grid = fig.add_gridspec(2, 2, width_ratios=[1.32, 1])
+    fig = plt.figure(figsize=(11.5, 4.8), layout="constrained")
+    grid = fig.add_gridspec(2, 2, width_ratios=[1.08, 1])
     for i, (title, unit) in enumerate([("Акселерометр", "м/с²"), ("Гироскоп", "рад/с")]):
         ax = fig.add_subplot(grid[i, 0])
         for j, (axis, color) in enumerate(zip("XYZ", ["#087984", "#bb6026", "#6b5795"])):
@@ -31,20 +31,28 @@ def plot_window(row, vectors):
         ax.spines[["top", "right"]].set_visible(False)
     ax = fig.add_subplot(grid[:, 1])
     ax.set_axis_off()
-    ax.text(0, .80, "Скорость по осям платформы", weight="bold", fontsize=13)
-    ax.text(0, .72, "Средняя за эту секунду, м/с", fontsize=10)
-    cells = [[label, *(f"{v:.2f}".replace(".", ",").replace("-", "−") for v in values)]
-             for label, values in vectors]
-    table = ax.table(cellText=cells, colLabels=["", "vx", "vy", "vz"],
-                     cellLoc="center", colWidths=[.43, .19, .19, .19], bbox=[0, .28, 1, .34])
+    def decimal(value):
+        return f"{value:.2f}".replace(".", ",").replace("-", "−")
+
+    cells = [["Разметка", *map(decimal, target), "—"]]
+    for label, vector in predictions:
+        error = np.linalg.norm(vector - target)
+        cells.append([label, *map(decimal, vector), decimal(error)])
+    ax.text(0, .82, "Кто точнее на этой секунде?", weight="bold", fontsize=14)
+    ax.text(0, .72, "Сравните прогноз со строкой разметки. Все числа в м/с.", fontsize=10)
+    table = ax.table(cellText=cells, colLabels=["", "vx", "vy", "vz", "Ошибка ↓"],
+                     cellLoc="center", colWidths=[.31, .15, .15, .15, .24], bbox=[0, .34, 1, .32])
     table.auto_set_font_size(False)
     table.set_fontsize(10)
     for (r, c), cell in table.get_celld().items():
         cell.set_edgecolor("white")
-        cell.set_facecolor("#e0eeee" if r == 0 else "#f0f4f5")
+        cell.set_facecolor("#e0eeee" if r == 0 or c == 4 else "#f0f4f5")
         if c == 0:
             cell.get_text().set_ha("left")
-    fig.suptitle(f"Одна секунда полёта · {row.traj_id.iloc[0]} · окно {row.win_idx.iloc[0]}", fontsize=14)
+        if c == 4:
+            cell.get_text().set_weight("bold")
+    ax.text(0, .20, "Ошибка — длина разности двух векторов скорости.", fontsize=10)
+    fig.suptitle(f"Одинаковый вход для обеих моделей · {row.traj_id.iloc[0]} · окно {row.win_idx.iloc[0]}", fontsize=14)
     fig.savefig(OUT / "imu_window.png", dpi=170)
     plt.close(fig)
 
@@ -73,7 +81,7 @@ def main():
     example = rows[rows.traj_id.eq("drone_train_0224") & rows.win_idx.eq(31)]
     idx = example.index.item()
     plot_window(example, [("MLP", forecasts["mlp_plain"][idx]),
-                          ("GRU + gate", forecasts["temporal_gate"][idx]), ("Разметка", target[idx])])
+                          ("GRU + gate", forecasts["temporal_gate"][idx])], target[idx])
 
     fig, axes = plt.subplots(1, 2, figsize=(10, 3.6), sharex=True, sharey=True, layout="constrained")
     for ax, name, title, color in zip(
