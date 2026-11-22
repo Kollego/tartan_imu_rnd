@@ -83,19 +83,47 @@ def main():
     plot_window(example, [("MLP", forecasts["mlp_plain"][idx]),
                           ("GRU + gate", forecasts["temporal_gate"][idx])], target[idx])
 
-    fig, axes = plt.subplots(1, 2, figsize=(10, 3.6), sharex=True, sharey=True, layout="constrained")
-    for ax, name, title, color in zip(
-        axes, ("mlp_plain", "temporal_gate"), ("Было · MLP", "Стало · Conv1d + GRU с gate"), ("#92502e", "#087678")
-    ):
-        ax.plot(flight.win_idx, flight.target_speed, color="#263746", label="Истинная скорость", lw=2.2)
-        ax.plot(flight.win_idx, flight[f"{name}_speed"], color=color, label="Прогноз", lw=1.8, ls="--")
-        ax.set_title(title, fontweight="bold")
-        ax.set_xlabel("Секунда полёта")
-        ax.grid(axis="y", alpha=0.18)
+    gains = flight.mlp_plain_error - flight.temporal_gate_error
+    folds = pd.read_csv(OUT / "folds.csv")
+    cv = folds[folds.role.eq("generalist")].pivot(index="fold", columns="variant", values="ave")
+    old, new = cv["mlp_plain"], cv["temporal_gate"]
+
+    def summary(before, after):
+        change = 100 * (after - before) / before
+        return f"{before:.3f} → {after:.3f} м/с  ({change:+.1f}%)".replace(".", ",").replace("-", "−")
+
+    fig, (local, overall) = plt.subplots(1, 2, figsize=(11.8, 4.5), layout="constrained",
+                                         gridspec_kw={"width_ratios": [1.45, 1]})
+    teal, rust = "#087678", "#a94f31"
+    local.bar(flight.win_idx, gains, width=.82, color=np.where(gains >= 0, teal, rust))
+    local.axhline(0, color="#263746", lw=1)
+    limit = gains.abs().max() * 1.24
+    local.set(ylim=(-limit, limit), xlabel="Секунда полёта", ylabel="Ошибка MLP минус ошибка GRU + gate, м/с")
+    local.set_title("Один полёт · средняя ошибка вектора\n"
+                    + summary(flight.mlp_plain_error.mean(), flight.temporal_gate_error.mean()),
+                    loc="left", fontsize=12, pad=12)
+    for idx in [gains.idxmax(), gains.idxmin()]:
+        second, gain = flight.at[idx, "win_idx"], gains.at[idx]
+        label = f"{second} с · {gain:+.2f}".replace(".", ",").replace("-", "−")
+        local.annotate(label, (second, gain), xytext=(0, 5 if gain > 0 else -5),
+                       textcoords="offset points", ha="center", va="bottom" if gain > 0 else "top",
+                       color=teal if gain > 0 else rust, fontsize=9, weight="bold")
+    local.text(.02, .96, f"GRU + gate точнее · {(gains > 0).sum()} с", transform=local.transAxes,
+               va="top", color=teal, fontsize=10)
+    local.text(.02, .04, f"MLP точнее · {(gains < 0).sum()} с", transform=local.transAxes,
+               color=rust, fontsize=10)
+
+    overall.hlines(cv.index, new, old, color="#aab6b8", lw=2)
+    overall.scatter(new, cv.index, color=teal, marker="D", label="GRU + gate", s=44, zorder=3)
+    overall.scatter(old, cv.index, color="#414b56", label="MLP", s=48, zorder=3)
+    overall.set(yticks=cv.index, ylabel="Фолд", xlabel="Macro AVE, м/с · меньше лучше")
+    overall.invert_yaxis()
+    overall.margins(y=.20, x=.12)
+    overall.legend(loc="best", frameon=False, ncol=2, fontsize=9)
+    overall.set_title("Пять фолдов · средняя macro AVE\n" + summary(old.mean(), new.mean()),
+                      loc="left", fontsize=12, pad=12)
+    for ax in (local, overall):
         ax.spines[["top", "right"]].set_visible(False)
-        ax.legend(frameon=False, loc="upper left")
-    axes[0].set_ylabel("Модуль скорости, м/с")
-    axes[0].set_ylim(bottom=0)
     fig.savefig(OUT / "flight_before_after.png", dpi=170)
     plt.close(fig)
 
