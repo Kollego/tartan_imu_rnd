@@ -73,5 +73,26 @@ def main():
     plt.close(fig)
 
 
+    domains = pd.read_csv(OUT / "domains.csv").pivot(
+        index="platform", columns=["variant", "role"], values="ave")
+    fig, ax = plt.subplots(figsize=(8.6, 3.5), layout="constrained")
+    ax.hlines(range(len(domains)), 0, 1, color="#dedede", linewidth=0.8, zorder=0)
+    for variant, role, label, marker, color in [
+        ("mlp_plain", "generalist", "MLP · генералист", "o", "#687783"),
+        ("temporal_gate", "generalist", "GRU + gate · генералист", "D", COLORS["generalist"]),
+        ("temporal_gate", "specialists", "GRU + gate · специалисты", "s", COLORS["specialists"]),
+    ]:
+        ax.scatter(domains[variant, role], domains.index, label=label, marker=marker, color=color, s=52)
+    ax.set_xlim(0, 1)
+    ax.invert_yaxis()
+    ax.margins(y=0.22)
+    ax.set_xlabel("OOF AVE по платформе, м/с  ·  меньше лучше")
+    ax.set_title("У дрона остаётся самая высокая ошибка")
+    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.26), ncol=3, frameon=False, fontsize=9)
+    ax.spines[["top", "right", "left"]].set_visible(False)
+    fig.savefig(OUT / "platform_errors.png", dpi=170)
+    plt.close(fig)
+
+
 if __name__ == "__main__":
     main()
