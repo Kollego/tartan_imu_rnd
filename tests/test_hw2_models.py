@@ -14,10 +14,17 @@ from src.model import build_model
 class HW2Models(unittest.TestCase):
     def test_patch_operation_matches_strided_convolution(self):
         x = torch.randn(3, 200, 6)
-        patch = build_model("window", encoder="temporal", mixing="plain").encoder.patch_conv
-        expected = F.conv1d(x.transpose(1, 2), patch.weight.reshape(32, 50, 6).transpose(1, 2),
-                            patch.bias, stride=50).transpose(1, 2)
-        torch.testing.assert_close(patch(x.reshape(len(x), 4, 300)), expected)
+        for size in (25, 50, 100):
+            with self.subTest(patch_size=size):
+                model = build_model("window", encoder="temporal", mixing="gate", patch_size=size)
+                patch = model.encoder.patch_conv
+                expected = F.conv1d(x.transpose(1, 2), patch.weight.reshape(32, size, 6).transpose(1, 2),
+                                    patch.bias, stride=size).transpose(1, 2)
+                captured = []
+                hook = model.encoder.gru.register_forward_pre_hook(lambda _, args: captured.append(args[0]))
+                self.assertEqual(model(x).shape, (len(x), 3))
+                hook.remove()
+                torch.testing.assert_close(captured[0], expected.relu())
 
     def test_gate_starts_at_fixed_mixture_for_both_encoders(self):
         x = torch.randn(3, 200, 6)

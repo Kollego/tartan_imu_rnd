@@ -5,21 +5,23 @@ from torch import nn
 
 
 class TemporalEncoder(nn.Module):
-    def __init__(self):
+    def __init__(self, patch_size=50):
         super().__init__()
-        # Four ordered 250-ms patches. A shared linear map on disjoint patches
-        # is a Conv1d with kernel size and stride 50, in time-major layout.
-        self.patch_conv = nn.Linear(50 * 6, 32)
+        if not isinstance(patch_size, int) or patch_size <= 0 or 200 % patch_size:
+            raise ValueError("patch_size must be a positive divisor of the 200-sample input")
+        self.patch_size = patch_size
+        # A shared linear map on disjoint patches is a strided Conv1d.
+        self.patch_conv = nn.Linear(patch_size * 6, 32)
         self.gru = nn.GRU(32, 64, batch_first=True)
 
     def forward(self, x):
-        patches = self.patch_conv(x.reshape(len(x), 4, 300)).relu()
+        patches = self.patch_conv(x.reshape(len(x), 200 // self.patch_size, self.patch_size * 6)).relu()
         _, last = self.gru(patches)
         return last[0]
 
 
 class WindowRegressor(nn.Module):
-    def __init__(self, encoder, mixing, mean=None, std=None):
+    def __init__(self, encoder, mixing, mean=None, std=None, patch_size=50):
         super().__init__()
         self.register_buffer("mean", torch.zeros(6) if mean is None else torch.as_tensor(mean, dtype=torch.float32))
         self.register_buffer("std", torch.ones(6) if std is None else torch.as_tensor(std, dtype=torch.float32))
@@ -27,7 +29,7 @@ class WindowRegressor(nn.Module):
             self.encoder = nn.Sequential(nn.Flatten(), nn.Linear(1200, 128), nn.ReLU(),
                                          nn.Linear(128, 64), nn.ReLU())
         elif encoder == "temporal":
-            self.encoder = TemporalEncoder()
+            self.encoder = TemporalEncoder(patch_size)
         else:
             raise ValueError(f"Unknown encoder: {encoder}")
         if mixing not in ("plain", "fixed", "gate"):

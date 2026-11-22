@@ -8,7 +8,7 @@ from clearml import Task
 
 from exps.baseline.train_steps import write_json
 from exps.hw2.results import PRED, archive, expected_rows, is_archived, read_run, validate
-from exps.hw2.study import FOLDS, HYPOTHESES, MARGIN, PROJECT, ROOT, VARIANTS, config_for
+from exps.hw2.study import FOLDS, HYPOTHESES, MARGIN, PATCH_SIZES, PROJECT, ROOT, VARIANTS, config_for
 from src.data import PLATFORMS
 from src.metrics import velocity_metrics
 from src.model import build_model
@@ -27,7 +27,7 @@ def sync(variant, platform):
     config = config_for(variant, platform)
     if historical:
         config = json.loads((archive(platform) / "config.json").read_text())
-    encoder, mixing = variant.split("_")
+    encoder, mixing = variant.split("_")[:2]
     metrics = velocity_metrics(frame, frame[PRED].to_numpy())
     history = history.sort_values(["fold", "step"])
     end = history[history.step.eq(10000)]
@@ -42,6 +42,11 @@ def sync(variant, platform):
     task.mark_started(force=True)
     task.add_tags([encoder, mixing, platform, "HW1-import" if historical else "HW2"])
     hypothesis = ("Reference from HW1, fixed 10000-step checkpoint." if historical else HYPOTHESES[mixing])
+    if variant in PATCH_SIZES:
+        task.add_tags(["patch-size"])
+        hypothesis = ("Longer patches aggregate more samples but give the GRU fewer time steps."
+                      if PATCH_SIZES[variant] == 100 else
+                      "Shorter patches give the GRU more time steps for within-second motion.")
     task.set_comment(hypothesis)
     source = (archive(platform) / "environment.json" if historical else ROOT / variant / platform / "manifest.json")
     commit = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
@@ -76,7 +81,7 @@ def sync(variant, platform):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(__doc__)
-    parser.add_argument("variant", choices=VARIANTS)
+    parser.add_argument("variant", choices=(*VARIANTS, *PATCH_SIZES))
     parser.add_argument("platform", choices=("all", *PLATFORMS))
     args = parser.parse_args()
     sync(args.variant, args.platform)
