@@ -55,7 +55,7 @@ def measurements():
         folds_better_than_reference=("delta_vs_reference", lambda x: (x < 0).sum()))
     folds.to_csv(OUT / "sensitivity_folds.csv", index=False)
     summary.to_csv(OUT / "sensitivity.csv", index=False)
-    return summary
+    return summary, folds
 
 
 def plot(summary):
@@ -79,8 +79,33 @@ def plot(summary):
         ax.spines[:].set_visible(False)
     axes[0].set_ylabel("Участки в одной секунде")
     fig.suptitle("Средняя CV macro AVE, м/с · чем меньше, тем лучше\n"
-                 "Рамка — минимум среди девяти сочетаний для каждой стороны", fontsize=13)
+                 "Внутри панели темнее — точнее. Рамка — минимум из девяти сочетаний.", fontsize=13)
     fig.savefig(OUT / "sensitivity.png", dpi=170)
+    plt.close(fig)
+
+
+def plot_fold_effects(folds):
+    comparisons = [(2, 10000, "2 участка"), (8, 10000, "8 участков"),
+                   (4, 2500, "2 500 шагов"), (4, 5000, "5 000 шагов")]
+    fig, axes = plt.subplots(1, 2, figsize=(10, 3.6), layout="constrained", sharex=True, sharey=True)
+    for ax, (role, title, color) in zip(axes, [("generalist", "Генералист", "#086b83"),
+                                                ("specialists", "Специалисты", "#993e15")]):
+        for i, (patches, steps, _) in enumerate(comparisons):
+            rows = folds[(folds.role == role) & (folds.patches == patches) & (folds.step == steps)]
+            values = rows.sort_values("fold").delta_vs_reference
+            ax.scatter(values, i + np.linspace(-.15, .15, 5), s=28, color=color, alpha=.75)
+            ax.plot(values.mean(), i, marker="D", markerfacecolor="white",
+                    markeredgecolor="#152f3b", markersize=7)
+        ax.axvline(0, color="#526470", linewidth=1, zorder=0)
+        ax.grid(axis="x", alpha=.18)
+        ax.spines[["top", "right", "left"]].set_visible(False)
+        ax.set_title(title)
+        ax.set_xlabel("Изменение CV macro AVE, м/с")
+    axes[0].set_yticks(range(len(comparisons)), [row[2] for row in comparisons])
+    axes[0].invert_yaxis()
+    fig.suptitle("Разница с 4 участками и 10 000 шагов · левее нуля — точнее\n"
+                 "Каждая точка — один фолд, ромб — среднее пяти фолдов", fontsize=13)
+    fig.savefig(OUT / "sensitivity_deltas.png", dpi=170)
     plt.close(fig)
 
 
@@ -107,6 +132,8 @@ def publish():
     pd.DataFrame(links).to_csv(OUT / "sensitivity_clearml.csv", index=False)
     task.mark_started(force=True)
     task.add_tags(["HW2", "sensitivity"])
+    task.set_comment("Can finer temporal resolution help the GRU? Does training for longer improve "
+                     "the generalist and the specialists equally? Each comparison reuses the same folds.")
     task.set_parameters_as_dict({"patch_samples": [100, 50, 25], "training_steps": list(BUDGETS),
                                  "seed_by_fold": "42 + fold", "reference": "4 patches, step 10000",
                                  "metric": "five-fold mean macro AVE, m/s"})
@@ -114,7 +141,9 @@ def publish():
     logger.report_table("Sensitivity", "Five-fold means", iteration=0,
                         table_plot=pd.read_csv(OUT / "sensitivity.csv"))
     logger.report_image("Sensitivity", "Patches and steps", iteration=0, local_path=str(OUT / "sensitivity.png"))
-    for name in ("sensitivity.csv", "sensitivity_folds.csv", "sensitivity_clearml.csv", "sensitivity.png"):
+    logger.report_image("Sensitivity", "Paired fold effects", iteration=0,
+                        local_path=str(OUT / "sensitivity_deltas.png"))
+    for name in ("sensitivity.csv", "sensitivity_folds.csv", "sensitivity_clearml.csv", "sensitivity.png", "sensitivity_deltas.png"):
         if not task.upload_artifact(name, OUT / name, wait_on_upload=True, retries=2):
             raise RuntimeError(f"Upload failed: {name}")
     task.flush(wait_for_uploads=True)
@@ -128,6 +157,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(__doc__)
     parser.add_argument("--publish", action="store_true", help="Also sync the comparison table and plot to ClearML")
     args = parser.parse_args()
-    plot(measurements())
+    summary, folds = measurements()
+    plot(summary)
+    plot_fold_effects(folds)
     if args.publish:
         publish()
