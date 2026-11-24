@@ -1,0 +1,17 @@
+variant,platform,url
+temporal_gate,all,https://app.clear.ml/projects/705d76f5521741b5909f64851f0a8638/tasks/1f54b983b2994d4b95ed14c61d844331/output/log
+temporal_gate,car,https://app.clear.ml/projects/705d76f5521741b5909f64851f0a8638/tasks/c1d72ac2758945abb726e651417cdcab/output/log
+temporal_gate,dog,https://app.clear.ml/projects/705d76f5521741b5909f64851f0a8638/tasks/9434302eca5d4871b31034eb9cceee34/output/log
+temporal_gate,drone,https://app.clear.ml/projects/705d76f5521741b5909f64851f0a8638/tasks/cdfac8938ff6431e8b121de1ee4cda1f/output/log
+temporal_gate,human,https://app.clear.ml/projects/705d76f5521741b5909f64851f0a8638/tasks/0faa4ea3eb99410e9270590ddaa69035/output/log
+temporal_gate_p100,all,https://app.clear.ml/projects/705d76f5521741b5909f64851f0a8638/tasks/5c0b2011c2e540ac889f58b869d0ebe1/output/log
+temporal_gate_p100,car,https://app.clear.ml/projects/705d76f5521741b5909f64851f0a8638/tasks/e2bc9da436114461b8e030bf0a861c73/output/log
+temporal_gate_p100,dog,https://app.clear.ml/projects/705d76f5521741b5909f64851f0a8638/tasks/7e1683ee9afc478aab4c15a6fc228a23/output/log
+temporal_gate_p100,drone,https://app.clear.ml/projects/705d76f5521741b5909f64851f0a8638/tasks/100d906ab9ac43738d37acd292125893/output/log
+temporal_gate_p100,human,https://app.clear.ml/projects/705d76f5521741b5909f64851f0a8638/tasks/7f1ee81fe982462eb36a37506ef96202/output/log
+temporal_gate_p25,all,https://app.clear.ml/projects/705d76f5521741b5909f64851f0a8638/tasks/be4e25b6a808491d8336e90cbec6c14b/output/log
+temporal_gate_p25,car,https://app.clear.ml/projects/705d76f5521741b5909f64851f0a8638/tasks/03c7f930749c437bb39d769d5fa649e6/output/log
+temporal_gate_p25,dog,https://app.clear.ml/projects/705d76f5521741b5909f64851f0a8638/tasks/c3b18c7afd974b8cbdecc910cf631bff/output/log
+temporal_gate_p25,drone,https://app.clear.ml/projects/705d76f5521741b5909f64851f0a8638/tasks/3271ab28af984c1188f39e47387b9ec8/output/log
+temporal_gate_p25,human,https://app.clear.ml/projects/705d76f5521741b5909f64851f0a8638/tasks/8f0177218b7b41b6acc635ac986dc534/output/log
+sensitivity,summary,https://app.clear.ml/projects/705d76f5521741b5909f64851f0a8638/tasks/b6f99ea93daa4e3db377fd205746f41c/output/log
