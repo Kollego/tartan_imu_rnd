@@ -1,0 +1,51 @@
+{
+  "steps": [
+    20000,
+    40000
+  ],
+  "models": [
+    {
+      "geometry": "p25_f32",
+      "patches_per_window": 8,
+      "samples_per_patch": 25,
+      "patch_filters": 32,
+      "gru_hidden_size": 64,
+      "parameters": 28272
+    },
+    {
+      "geometry": "p20_f32",
+      "patches_per_window": 10,
+      "samples_per_patch": 20,
+      "patch_filters": 32,
+      "gru_hidden_size": 64,
+      "parameters": 27312
+    },
+    {
+      "geometry": "p20_f64",
+      "patches_per_window": 10,
+      "samples_per_patch": 20,
+      "patch_filters": 64,
+      "gru_hidden_size": 64,
+      "parameters": 37328
+    }
+  ],
+  "loss": "velocity MSE",
+  "baseline": "runs/hw2/matched_steps_20000_40000/temporal_gate_p25/all",
+  "split": "TartanIMU train, out of fold",
+  "windows": 81931,
+  "trajectories": 395,
+  "split_seed": 42,
+  "train_seeds": [
+    42,
+    43,
+    44,
+    45,
+    46
+  ],
+  "bootstrap_seed": 20261128,
+  "bootstrap_replicates": 10000,
+  "scorer_commit": "8a8025000f85d2c6b0692b88e15c2c91e761f7d7",
+  "scorer_sha256": "84bfe63500909326a3189be7326b167d4d54bb0fad9098056148630bdb9e0704",
+  "quaternion_offset": 100,
+  "position_offset": 199
+}

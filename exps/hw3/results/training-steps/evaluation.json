@@ -1,0 +1,26 @@
+{
+  "variant": "temporal_gate_p25",
+  "steps": [
+    10000,
+    20000,
+    30000,
+    50000
+  ],
+  "split": "TartanIMU train, out of fold",
+  "split_seed": 42,
+  "training_seeds": [
+    42,
+    43,
+    44,
+    45,
+    46
+  ],
+  "historical_10000_oof_verified": true,
+  "bootstrap_seed": 20261128,
+  "bootstrap_replicates": 10000,
+  "scorer_commit": "8a8025000f85d2c6b0692b88e15c2c91e761f7d7",
+  "scorer_sha256": "84bfe63500909326a3189be7326b167d4d54bb0fad9098056148630bdb9e0704",
+  "quaternion_offset": 100,
+  "position_offset": 199,
+  "fast_speed_min_mps": 2
+}

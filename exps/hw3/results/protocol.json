@@ -1,0 +1,222 @@
+{
+  "split": "TartanIMU train, HW2 trajectory holdouts (OOF)",
+  "fold_seed": 42,
+  "train_config": {
+    "data_root": "data/tartan-imu-challenge-iros2026",
+    "output_dir": "runs/hw2/temporal_gate/all",
+    "seed": 42,
+    "n_splits": 5,
+    "folds": [
+      0,
+      1,
+      2,
+      3,
+      4
+    ],
+    "platform": null,
+    "hidden_sizes": [
+      128,
+      64
+    ],
+    "batch_size": 256,
+    "learning_rate": 0.001,
+    "weight_decay": 0.0001,
+    "device": "cpu",
+    "num_threads": 4,
+    "eval_every_steps": 250,
+    "drop_last": true,
+    "max_steps": 10000,
+    "snapshot_steps": [
+      10000
+    ],
+    "model_name": "window",
+    "model_kwargs": {
+      "encoder": "temporal",
+      "mixing": "gate"
+    }
+  },
+  "folds": [
+    {
+      "fold": 0,
+      "train_seed": 42,
+      "validation_windows": 15500,
+      "validation_trajectories": 79,
+      "train_windows": 66431,
+      "train_trajectories": 316,
+      "checkpoint": "runs/hw2/temporal_gate/all/fold_0/step_10000.pt",
+      "checkpoint_sha256": "a0c0c876ec47136ef17d929f2b3ad433d95ddc2abb163028c9c37ba7ee8529f4",
+      "oof": "runs/hw2/temporal_gate/all/fold_0/oof.csv",
+      "oof_sha256": "ef3332ce7373baf8354a052bb6e1a9fd1a2fcfe0ac08ca5579d32a08021fcfd9",
+      "validation_imu_float32_sha256": "fdbc5bab0e53a080e74c51dd381d1cf438846fae2006a080a6d3745149ab05db",
+      "normalization_mean": [
+        -0.6073390245437622,
+        -3.081225872039795,
+        6.656085968017578,
+        0.0006546874647028744,
+        -0.0027773892506957054,
+        0.03454200550913811
+      ],
+      "normalization_std": [
+        2.704136371612549,
+        4.644201755523682,
+        4.62544584274292,
+        0.30670487880706787,
+        0.5133338570594788,
+        0.4949764311313629
+      ]
+    },
+    {
+      "fold": 1,
+      "train_seed": 43,
+      "validation_windows": 14248,
+      "validation_trajectories": 79,
+      "train_windows": 67683,
+      "train_trajectories": 316,
+      "checkpoint": "runs/hw2/temporal_gate/all/fold_1/step_10000.pt",
+      "checkpoint_sha256": "ad238371a4ad0e269fc5b4bcc9161caf681a57d09b1a1ab3387c63f14c97de76",
+      "oof": "runs/hw2/temporal_gate/all/fold_1/oof.csv",
+      "oof_sha256": "e24ca7802693d6094ef2852c88409d77d370aa5f279b0ef1f2eb2edd00dad717",
+      "validation_imu_float32_sha256": "8907fd6bd5b77e28d98eb284998b4c1cc86a5391a33316242e5aee3a1931846b",
+      "normalization_mean": [
+        -0.6263116598129272,
+        -3.004037857055664,
+        6.734234809875488,
+        0.0004588186275213957,
+        -0.00354374130256474,
+        0.036504510790109634
+      ],
+      "normalization_std": [
+        2.6837000846862793,
+        4.612624168395996,
+        4.590967178344727,
+        0.3033805191516876,
+        0.501171886920929,
+        0.49805352091789246
+      ]
+    },
+    {
+      "fold": 2,
+      "train_seed": 44,
+      "validation_windows": 13852,
+      "validation_trajectories": 79,
+      "train_windows": 68079,
+      "train_trajectories": 316,
+      "checkpoint": "runs/hw2/temporal_gate/all/fold_2/step_10000.pt",
+      "checkpoint_sha256": "030913ced9066a28d0bd97234dbee26fc305189c5d13cf01b80699dbb9b7b3ce",
+      "oof": "runs/hw2/temporal_gate/all/fold_2/oof.csv",
+      "oof_sha256": "2aa13d63de147205f7128b11d76a4276de6534065bd2e299fa9c5612b49bba38",
+      "validation_imu_float32_sha256": "41ecec0fcc7bb31e5854b90d0a9605d8ad948d961b4d1d4f31438b327ee6b6ff",
+      "normalization_mean": [
+        -0.5857200026512146,
+        -2.9210500717163086,
+        6.832891941070557,
+        0.00011419290240155533,
+        -0.0034941895864903927,
+        0.03180980309844017
+      ],
+      "normalization_std": [
+        2.6517457962036133,
+        4.593710422515869,
+        4.546393871307373,
+        0.30241331458091736,
+        0.48880109190940857,
+        0.49070870876312256
+      ]
+    },
+    {
+      "fold": 3,
+      "train_seed": 45,
+      "validation_windows": 17016,
+      "validation_trajectories": 79,
+      "train_windows": 64915,
+      "train_trajectories": 316,
+      "checkpoint": "runs/hw2/temporal_gate/all/fold_3/step_10000.pt",
+      "checkpoint_sha256": "9b61eb76a144f68dca810493d00aa9a0e65e3fbbda7031d1343a08927b4851f3",
+      "oof": "runs/hw2/temporal_gate/all/fold_3/oof.csv",
+      "oof_sha256": "3a97fd7cdf84a4980ad34b6f2ea34475ed9d26e862895b6d0b054525fc6a9158",
+      "validation_imu_float32_sha256": "6a691e422a4327fa0171e39c499b5a3f72f1164d63c66b4311b4c9e518494d7c",
+      "normalization_mean": [
+        -0.5435426831245422,
+        -3.217054843902588,
+        6.56555700302124,
+        0.0008241045870818198,
+        -0.003042122581973672,
+        0.03432995453476906
+      ],
+      "normalization_std": [
+        2.575403928756714,
+        4.7052435874938965,
+        4.6390790939331055,
+        0.3011631965637207,
+        0.5044295787811279,
+        0.48021161556243896
+      ]
+    },
+    {
+      "fold": 4,
+      "train_seed": 46,
+      "validation_windows": 21315,
+      "validation_trajectories": 79,
+      "train_windows": 60616,
+      "train_trajectories": 316,
+      "checkpoint": "runs/hw2/temporal_gate/all/fold_4/step_10000.pt",
+      "checkpoint_sha256": "0ed0bfd2c23ad9385a8de543a7637db6c5eebf2923becb472413d34511e227c0",
+      "oof": "runs/hw2/temporal_gate/all/fold_4/oof.csv",
+      "oof_sha256": "0060f98ba8353b88cb8917d6b7edd8b537d9e5bbb764800315cd9c47f2bc3b3a",
+      "validation_imu_float32_sha256": "a04dc90b3e9007baa1d48a0dbd811e2e94b282053a5e03cdbb6f9902a3d66f82",
+      "normalization_mean": [
+        -0.4959602952003479,
+        -3.262960195541382,
+        6.445322513580322,
+        1.0273543011862785e-05,
+        -0.004774776287376881,
+        0.041293270885944366
+      ],
+      "normalization_std": [
+        2.6124069690704346,
+        4.757051467895508,
+        4.742903709411621,
+        0.31288081407546997,
+        0.5162352323532104,
+        0.5235850214958191
+      ]
+    }
+  ],
+  "inference": {
+    "device": "cpu",
+    "batch_size": 512,
+    "threads": 4,
+    "deterministic": true
+  },
+  "bootstrap": {
+    "generator": "NumPy PCG64",
+    "seed": 20261128,
+    "replicates": 10000,
+    "interval": "percentile 2.5%, 97.5%",
+    "strata": "fold × platform",
+    "unit": "whole trajectory",
+    "scope": "conditional on fixed trained models and folds"
+  },
+  "files": {
+    "exps/hw2/folds.csv": "acc65ab5b7e7da2f61ca878f110f47bbec6dfed419acc211f3c9b331b2547d62",
+    "exps/hw2/results/selection.json": "d0eced329228469076419935aa543a3b78579152c09fceb937cf18fb6aa36fef",
+    "data/tartan-imu-challenge-iros2026/index/train_windows.csv": "da7f985dbf9538a7211f4930750891cd34b7c01802fe0cba1f05884104592d39",
+    "data/tartan-imu-challenge-iros2026/index/train_targets.csv": "3eca32ed1613e47e57f60481201d49ebb9386823c56491864ea953bf399089e0",
+    "uv.lock": "c37e7af1dfad5498c3a023512f9c70a28d6720ec0130a8d6743c765030f1b3d2",
+    "runs/hw2/temporal_gate/all/manifest.json": "d092c884a7a15b117997b9dc0be132834288a9bf570bae1ffe0d3e598f4d2cab",
+    "exps/hw3/analyze.py": "51b7184e3263ee8caa258f278716f51ed157e43ce9f880667c6a959eaa419151",
+    "exps/hw3/bootstrap.py": "a635ccc655886f15b63e04d54899c728cea7b5b782e4ce1c67585927f4a6ee4d",
+    "exps/hw3/figure.py": "7f3b16cf9c422f7611efd25d862bc1e598b342413b7d32ed68a5ee5bff4798eb",
+    "exps/hw3/report.html": "33916f8fd0cc37f71cccd7d26efd44987be1054c93949438c7d4baf26c496584"
+  },
+  "runtime": {
+    "python": "3.12.12",
+    "numpy": "2.5.4",
+    "pandas": "3.1.1",
+    "scikit_learn": "1.9.1",
+    "torch": "2.15.0",
+    "matplotlib": "3.11.2",
+    "platform": "Darwin",
+    "architecture": "arm64"
+  }
+}

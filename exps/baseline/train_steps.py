@@ -3,6 +3,7 @@
 import argparse
 import hashlib
 import json
+import math
 import os
 import platform
 import random
@@ -14,7 +15,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import torch
-from torch.utils.data import DataLoader, Subset
+from torch.utils.data import DataLoader, Subset, default_collate
 
 from src.data import PLATFORMS, IMUDataset, compute_normalization, make_folds, read_index
 from src.inference import predict
@@ -48,7 +49,7 @@ def reference_budgets(frame, assignments, config):
     return pd.DataFrame(rows)
 
 
-def train_fold(dataset, frame, assignments, fold, config, output, on_metric=None):
+def train_fold(dataset, frame, assignments, fold, config, output, on_metric=None, on_snapshot=None):
     """Save fixed-step checkpoints and their metrics."""
     directory = Path(output) / f"fold_{fold}"
     directory.mkdir()
@@ -69,18 +70,36 @@ def train_fold(dataset, frame, assignments, fold, config, output, on_metric=None
     normalization_cpu_seconds = time.process_time() - norm_cpu_started
     model_name = config.get("model_name", "mlp")
     kwargs = config.get("model_kwargs") or {"hidden_sizes": config["hidden_sizes"]}
+    gate_domain_weight = config.get("gate_domain_weight", 0.0)
+    if not math.isfinite(gate_domain_weight) or gate_domain_weight < 0:
+        raise ValueError("Gate domain loss weight must be finite and nonnegative")
+    if gate_domain_weight and (model_name != "window" or kwargs.get("mixing") != "gate"):
+        raise ValueError("Gate domain loss requires a window model with adaptive mixing")
+    domain_targets = None
+    if gate_domain_weight:
+        codes = pd.Categorical(frame.iloc[train_rows].platform, categories=PLATFORMS).codes
+        if (codes < 0).any():
+            raise ValueError("Unknown training platform for gate domain loss")
+        domain_targets = torch.tensor(codes, dtype=torch.long)
     model = build_model(model_name, **kwargs, mean=mean, std=std)
     train_set, val_set = Subset(dataset, train_rows), Subset(dataset, val_rows)
     val_frame = frame.iloc[val_rows].reset_index(drop=True)
     loader = DataLoader(train_set, batch_size=config["batch_size"], shuffle=True,
                         generator=torch.Generator().manual_seed(seed), num_workers=0,
                         drop_last=True)
-    if isinstance(dataset, IMUDataset):
+    indexed_dataset = isinstance(dataset, IMUDataset)
+    if indexed_dataset or domain_targets is not None:
         # Batch indexing preserves DataLoader shuffles and avoids 256 Python
         # calls and a tensor stack for each optimizer update.
         def gather(indices):
             rows = train_rows[indices]
-            return torch.from_numpy(dataset.x[rows]), torch.from_numpy(dataset.y[rows])
+            if indexed_dataset:
+                inputs = torch.from_numpy(dataset.x[rows]), torch.from_numpy(dataset.y[rows])
+            else:
+                inputs = default_collate([dataset[row] for row in rows])
+            if domain_targets is None:
+                return inputs
+            return *inputs, domain_targets[indices]
         loader = DataLoader(range(len(train_rows)), batch_size=config["batch_size"], shuffle=True,
                             generator=torch.Generator().manual_seed(seed), collate_fn=gather, drop_last=True)
     optimizer = torch.optim.Adam(model.parameters(), lr=config["learning_rate"],
@@ -89,7 +108,7 @@ def train_fold(dataset, frame, assignments, fold, config, output, on_metric=None
     training_ids = sorted(frame.iloc[train_rows].traj_id.unique().tolist())
     iterator = None
     train_seconds = train_cpu_seconds = evaluation_seconds = evaluation_cpu_seconds = 0.0
-    interval_loss = 0.0
+    interval_mse = interval_domain_ce = 0.0
     interval_examples = validation_calls = 0
     best_ave, best_step = float("inf"), None
     history, snapshots = [], {}
@@ -98,19 +117,27 @@ def train_fold(dataset, frame, assignments, fold, config, output, on_metric=None
         if iterator is None:
             iterator = iter(loader)
         try:
-            imu, target = next(iterator)
+            batch = next(iterator)
         except StopIteration:
             # Restart the loader to obtain a NEW shuffled pass, never cache batches.
             iterator = iter(loader)
-            imu, target = next(iterator)
+            batch = next(iterator)
         model.train()
         optimizer.zero_grad(set_to_none=True)
-        loss = torch.nn.functional.mse_loss(model(imu), target)
+        imu, target = batch[:2]
+        if domain_targets is None:
+            mse = loss = torch.nn.functional.mse_loss(model(imu), target)
+        else:
+            velocity, gate_logits = model(imu, return_gate_logits=True)
+            mse = torch.nn.functional.mse_loss(velocity, target)
+            domain_ce = torch.nn.functional.cross_entropy(gate_logits, batch[2])
+            loss = mse + gate_domain_weight * domain_ce
+            interval_domain_ce += domain_ce.item() * len(imu)
         if not torch.isfinite(loss):
             raise ValueError("Nonfinite training loss")
         loss.backward()
         optimizer.step()
-        interval_loss += loss.item() * len(imu)
+        interval_mse += mse.item() * len(imu)
         interval_examples += len(imu)
         train_seconds += time.perf_counter() - started
         train_cpu_seconds += time.process_time() - cpu_started
@@ -136,12 +163,15 @@ def train_fold(dataset, frame, assignments, fold, config, output, on_metric=None
             "elapsed_seconds": time.perf_counter() - fold_started,
             "elapsed_cpu_seconds": time.process_time() - fold_cpu_started,
         }
-        history.append({"fold": fold, "step": step, "train_mse": interval_loss / interval_examples,
-                        "cv_macro_ave": metrics["macro_ave"], "best_step_so_far": best_step,
-                        "best_ave_so_far": best_ave, **compute})
+        row = {"fold": fold, "step": step, "train_mse": interval_mse / interval_examples,
+               "cv_macro_ave": metrics["macro_ave"], "best_step_so_far": best_step,
+               "best_ave_so_far": best_ave, **compute}
+        if domain_targets is not None:
+            row["train_gate_domain_ce"] = interval_domain_ce / interval_examples
+        history.append(row)
         if on_metric is not None:
             on_metric(history[-1])
-        interval_loss = 0.0
+        interval_mse = interval_domain_ce = 0.0
         interval_examples = 0
         checkpoint = {
             "model_name": model_name, "model_kwargs": kwargs,
@@ -165,6 +195,8 @@ def train_fold(dataset, frame, assignments, fold, config, output, on_metric=None
                    "best_ave_so_far": best_ave, **compute, **metrics["per_platform"]}
             snapshots[step] = (row, oof)
             write_json(directory / f"step_{step}_metrics.json", {"model": metrics, "zero": zero, **compute})
+            if on_snapshot is not None:
+                on_snapshot(step, oof)
         pd.DataFrame(history).to_csv(directory / "history.csv", index=False)
         print(f"fold={fold} step={step} cv_AVE={metrics['macro_ave']:.5f} "
               f"train_wall={train_seconds:.2f}s train_CPU={train_cpu_seconds:.2f}s", flush=True)

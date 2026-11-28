@@ -1,5 +1,6 @@
-"""Refit the CV-selected generalist, evaluate official val once and write the submission."""
+"""Refit a HW2 generalist, evaluate official val once and write the submission."""
 
+import argparse
 import hashlib
 import json
 import subprocess
@@ -13,18 +14,27 @@ from torch.utils.data import ConcatDataset
 
 from exps.baseline.train_steps import train_fold, write_json
 from exps.hw2.results import OUT
-from exps.hw2.study import ROOT, config_for
+from exps.hw2.study import PATCH_SIZES, ROOT, VARIANTS, config_for
 from src.data import IMUDataset, read_index
 from src.inference import load_model, predict
 from src.metrics import velocity_metrics
 
 
 def main():
-    selection = json.loads((OUT / "selection.json").read_text())
-    config = config_for(selection["variant"], "all")
-    config.update(eval_every_steps=config["max_steps"], folds=[0], output_dir=str(ROOT / "final"))
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--variant", choices=(*VARIANTS, *PATCH_SIZES),
+                        help="Refit this variant separately from the original HW2 selection")
+    parser.add_argument("--output", type=Path, help="New directory for this refit")
+    args = parser.parse_args()
+
+    selection = ({"variant": args.variant, "criterion": "explicit variant"}
+                 if args.variant else json.loads((OUT / "selection.json").read_text()))
+    variant = selection["variant"]
+    original = args.variant is None and args.output is None
+    output = args.output or (ROOT / (f"final_{variant}" if args.variant else "final"))
+    config = config_for(variant, "all")
+    config.update(eval_every_steps=config["max_steps"], folds=[0], output_dir=str(output))
     root = Path(config["data_root"])
-    output = ROOT / "final"
     output.mkdir(parents=True, exist_ok=False)
     write_json(output / "selection.json", selection)
     train, val = (read_index(root, split) for split in ("train", "val"))
@@ -51,7 +61,7 @@ def main():
     metrics = velocity_metrics(val, saved)
     predictions.to_csv(output / "val_predictions.csv", index=False)
     write_json(output / "val_metrics.json", metrics)
-    submission = output / "submission.csv"
+    submission = output / (f"submission_{variant}.csv" if args.variant else "submission.csv")
     subprocess.run([sys.executable, "-m", "scripts.predict", "--checkpoint", str(checkpoint),
                     "--data-root", str(root), "--output", str(submission)], check=True)
     actual = pd.read_csv(submission)
@@ -60,12 +70,29 @@ def main():
         raise ValueError("Submission schema or row order differs from the official template")
     if not actual.window_id.is_unique or not np.isfinite(actual[["vx", "vy", "vz"]]).all().all():
         raise ValueError("Invalid submission rows")
-    write_json(output / "verified.json", {"variant": selection["variant"], "training_trajectories": int(train.traj_id.nunique()),
-               "training_windows": len(train), "val_trajectories": int(val.traj_id.nunique()), "val_windows": len(val),
-               "submission_sha256": hashlib.sha256(submission.read_bytes()).hexdigest(),
-               "val_macro_ave": metrics["macro_ave"], "val_per_platform": metrics["per_platform"],
-               "test_rows": len(actual), "columns": list(actual.columns), "submission_uploaded": False})
-    (OUT / "official_val.json").write_bytes((output / "verified.json").read_bytes())
+    verification = {
+        "variant": variant,
+        "training_trajectories": int(train.traj_id.nunique()),
+        "training_windows": len(train),
+        "val_trajectories": int(val.traj_id.nunique()),
+        "val_windows": len(val),
+        "submission_sha256": hashlib.sha256(submission.read_bytes()).hexdigest(),
+        "val_macro_ave": metrics["macro_ave"],
+        "val_per_platform": metrics["per_platform"],
+        "test_rows": len(actual),
+        "columns": list(actual.columns),
+        "submission_uploaded": False,
+    }
+    if not original:
+        verification.update(
+            train_seed=state["seed"],
+            step=state["step"],
+            submission=submission.name,
+            checkpoint_sha256=hashlib.sha256(checkpoint.read_bytes()).hexdigest(),
+        )
+    write_json(output / "verified.json", verification)
+    if original:
+        (OUT / "official_val.json").write_bytes((output / "verified.json").read_bytes())
     print((output / "verified.json").read_text())
 
 

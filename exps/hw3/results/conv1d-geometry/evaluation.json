@@ -1,0 +1,84 @@
+{
+  "steps": [
+    20000,
+    40000
+  ],
+  "models": [
+    {
+      "geometry": "k20_s20",
+      "kernel_size": 20,
+      "stride": 20,
+      "right_padding": 0,
+      "gru_steps": 10,
+      "parameters": 37328,
+      "converted_control": true
+    },
+    {
+      "geometry": "k50_s50",
+      "kernel_size": 50,
+      "stride": 50,
+      "right_padding": 0,
+      "gru_steps": 4,
+      "parameters": 48848,
+      "converted_control": false
+    },
+    {
+      "geometry": "k50_s20",
+      "kernel_size": 50,
+      "stride": 20,
+      "right_padding": 10,
+      "gru_steps": 9,
+      "parameters": 48848,
+      "converted_control": false
+    },
+    {
+      "geometry": "k50_s10",
+      "kernel_size": 50,
+      "stride": 10,
+      "right_padding": 0,
+      "gru_steps": 16,
+      "parameters": 48848,
+      "converted_control": false
+    },
+    {
+      "geometry": "k20_s10",
+      "kernel_size": 20,
+      "stride": 10,
+      "right_padding": 0,
+      "gru_steps": 19,
+      "parameters": 37328,
+      "converted_control": false
+    },
+    {
+      "geometry": "k10_s10",
+      "kernel_size": 10,
+      "stride": 10,
+      "right_padding": 0,
+      "gru_steps": 20,
+      "parameters": 33488,
+      "converted_control": false
+    }
+  ],
+  "filters": 64,
+  "gru_hidden_size": 64,
+  "loss": "velocity MSE",
+  "control": "runs/hw2/encoder_ablation_steps_20000_40000/p20_f64",
+  "padding": "minimal right zero-padding after normalization to cover all samples",
+  "split": "TartanIMU train, out of fold",
+  "windows": 81931,
+  "trajectories": 395,
+  "split_seed": 42,
+  "train_seeds": [
+    42,
+    43,
+    44,
+    45,
+    46
+  ],
+  "bootstrap_seed": 20261128,
+  "bootstrap_replicates": 10000,
+  "scorer_commit": "8a8025000f85d2c6b0692b88e15c2c91e761f7d7",
+  "scorer_sha256": "84bfe63500909326a3189be7326b167d4d54bb0fad9098056148630bdb9e0704",
+  "quaternion_offset": 100,
+  "position_offset": 199
+}

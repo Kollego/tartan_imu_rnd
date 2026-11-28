@@ -1,0 +1,113 @@
+{
+  "baseline": {
+    "variant": "k10_s10",
+    "kernel_size": 10,
+    "stride": 10,
+    "filters": 64,
+    "temporal": "GRU",
+    "mixing": "gate",
+    "gate_lambda": 0,
+    "learning_rate": 0.001,
+    "parameters": 33488
+  },
+  "ablation_step": 40000,
+  "budget_steps": [
+    20000,
+    40000,
+    60000
+  ],
+  "windows": 81931,
+  "trajectories": 395,
+  "split_seed": 42,
+  "split": "TartanIMU train OOF",
+  "planned_seed_bases": [
+    42,
+    142,
+    242
+  ],
+  "train_seed_rule": "seed_base + fold",
+  "missing_primary": [
+    [
+      "k50_s50",
+      "specialists",
+      40000
+    ],
+    [
+      "k50_s20",
+      "specialists",
+      40000
+    ],
+    [
+      "k50_s10",
+      "specialists",
+      40000
+    ],
+    [
+      "k20_s20",
+      "specialists",
+      40000
+    ],
+    [
+      "k20_s10",
+      "specialists",
+      40000
+    ],
+    [
+      "filters32",
+      "generalist",
+      40000
+    ],
+    [
+      "filters32",
+      "specialists",
+      40000
+    ],
+    [
+      "gate_ce_0.01",
+      "specialists",
+      40000
+    ],
+    [
+      "gate_ce_0.1",
+      "generalist",
+      40000
+    ],
+    [
+      "gate_ce_0.1",
+      "specialists",
+      40000
+    ],
+    [
+      "lr_0.0003",
+      "generalist",
+      40000
+    ],
+    [
+      "lr_0.0003",
+      "specialists",
+      40000
+    ],
+    [
+      "lr_0.003",
+      "generalist",
+      40000
+    ],
+    [
+      "lr_0.003",
+      "specialists",
+      40000
+    ]
+  ],
+  "seed_bases_complete": {
+    "generalist": [],
+    "specialists": []
+  },
+  "selected_architecture": null,
+  "selection": "minimum generalist CV Score among Conv1d, temporal and gate ablations at 40000 updates",
+  "scorer_sha256": "84bfe63500909326a3189be7326b167d4d54bb0fad9098056148630bdb9e0704",
+  "scorer_commit": "8a8025000f85d2c6b0692b88e15c2c91e761f7d7",
+  "quaternion_offset": 100,
+  "position_offset": 199,
+  "bootstrap_seed": 20261128,
+  "bootstrap_replicates": 10000
+}
