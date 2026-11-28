@@ -79,6 +79,25 @@ class StepTrainingTests(unittest.TestCase):
                                          0, config, output)
         return result, updates, batches
 
+    def test_gate_supervision_changes_gate_weights_without_changing_forward_inputs(self):
+        config = dict(self.config, model_name="window",
+                      model_kwargs={"encoder": "temporal", "mixing": "gate", "patch_size": 25},
+                      max_steps=1, snapshot_steps=[1], eval_every_steps=1)
+        with tempfile.TemporaryDirectory() as baseline, tempfile.TemporaryDirectory() as supervised:
+            (_, control_history, _), _, control_batches = self.run_training(baseline, config)
+            (_, gate_history, _), _, gate_batches = self.run_training(
+                supervised, dict(config, gate_domain_weight=0.1))
+            self.assertEqual(control_batches, gate_batches)
+            self.assertEqual(control_history[0]["train_mse"], gate_history[0]["train_mse"])
+            self.assertAlmostEqual(gate_history[0]["train_gate_domain_ce"], np.log(len(PLATFORMS)), places=6)
+            control, _ = load_model(Path(baseline) / "fold_0/final.pt")
+            model, _ = load_model(Path(supervised) / "fold_0/final.pt")
+            self.assertFalse(torch.equal(control.gate.weight, model.gate.weight))
+            imu, _ = self.dataset[0]
+            velocity, logits = model(imu[None], return_gate_logits=True)
+            self.assertEqual(logits.shape, (1, len(PLATFORMS)))
+            torch.testing.assert_close(velocity, model(imu[None]), rtol=0, atol=0)
+
     def test_three_generalist_passes_and_both_specialist_budgets(self):
         # Reproduce all five real window counts without loading IMU arrays.
         validation_counts = [15500, 14248, 13852, 17016, 21315]

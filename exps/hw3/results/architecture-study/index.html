@@ -1,0 +1,278 @@
+<!doctype html><html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Абляции TartanIMU</title><style>
+body{margin:0;font:15px/1.5 system-ui;color:#172a27;background:#f6f8f4}main{max-width:1240px;margin:auto;padding:32px 24px}
+h1{font-size:2rem}section{margin:28px 0}a{color:#086b5d}.table{overflow:auto}table{width:100%;border-collapse:collapse;background:white}
+th,td{padding:8px 10px;border-bottom:1px solid #dce4da;text-align:right;white-space:nowrap}th{background:#e6efea}
+tr>:first-child{text-align:left}@media(max-width:600px){main{padding:18px 12px}}</style>
+<main><h1>Абляции Conv1d + GRU + gate</h1><p>Пять CV-фолдов по целым траекториям TartanIMU. Score и AVE — меньше лучше.
+У генералиста 5 чекпойнтов на условие. Группа специалистов включает четыре платформы по 5 чекпойнтов.
+Метрики появляются после завершения всех фолдов соответствующей группы.</p><section><h2>Conv1d</h2><div class="table"><table class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>Ядро</th>
+      <th>Stride</th>
+      <th>Фильтры</th>
+      <th>Фолды генералиста</th>
+      <th>Фолды специалистов</th>
+      <th>AVE генералиста</th>
+      <th>AVE специалистов</th>
+      <th>Score генералиста</th>
+      <th>Score специалистов</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>50</td>
+      <td>50</td>
+      <td>64</td>
+      <td>5/5</td>
+      <td>0/20</td>
+      <td>0.38890</td>
+      <td>—</td>
+      <td>0.53371</td>
+      <td>—</td>
+    </tr>
+    <tr>
+      <td>50</td>
+      <td>20</td>
+      <td>64</td>
+      <td>5/5</td>
+      <td>0/20</td>
+      <td>0.35484</td>
+      <td>—</td>
+      <td>0.48827</td>
+      <td>—</td>
+    </tr>
+    <tr>
+      <td>50</td>
+      <td>10</td>
+      <td>64</td>
+      <td>5/5</td>
+      <td>0/20</td>
+      <td>0.35327</td>
+      <td>—</td>
+      <td>0.47913</td>
+      <td>—</td>
+    </tr>
+    <tr>
+      <td>20</td>
+      <td>20</td>
+      <td>64</td>
+      <td>5/5</td>
+      <td>0/20</td>
+      <td>0.34845</td>
+      <td>—</td>
+      <td>0.47975</td>
+      <td>—</td>
+    </tr>
+    <tr>
+      <td>20</td>
+      <td>10</td>
+      <td>64</td>
+      <td>5/5</td>
+      <td>0/20</td>
+      <td>0.34278</td>
+      <td>—</td>
+      <td>0.47586</td>
+      <td>—</td>
+    </tr>
+    <tr>
+      <td>10</td>
+      <td>10</td>
+      <td>64</td>
+      <td>5/5</td>
+      <td>20/20</td>
+      <td>0.33647</td>
+      <td>0.27763</td>
+      <td>0.46365</td>
+      <td>0.364</td>
+    </tr>
+    <tr>
+      <td>10</td>
+      <td>10</td>
+      <td>32</td>
+      <td>0/5</td>
+      <td>0/20</td>
+      <td>—</td>
+      <td>—</td>
+      <td>—</td>
+      <td>—</td>
+    </tr>
+  </tbody>
+</table></div><p><a href="conv1d.csv">CSV с AVE, ATE20 и Score</a></p></section><section><h2>GRU и MLP</h2><div class="table"><table class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>После Conv1d</th>
+      <th>Параметры</th>
+      <th>Фолды генералиста</th>
+      <th>Фолды специалистов</th>
+      <th>AVE генералиста</th>
+      <th>AVE специалистов</th>
+      <th>Score генералиста</th>
+      <th>Score специалистов</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>GRU</td>
+      <td>33488</td>
+      <td>5/5</td>
+      <td>20/20</td>
+      <td>0.33647</td>
+      <td>0.27763</td>
+      <td>0.46365</td>
+      <td>0.36400</td>
+    </tr>
+    <tr>
+      <td>MLP</td>
+      <td>34147</td>
+      <td>5/5</td>
+      <td>20/20</td>
+      <td>0.45122</td>
+      <td>0.40309</td>
+      <td>0.61557</td>
+      <td>0.52234</td>
+    </tr>
+  </tbody>
+</table></div><p><a href="gru.csv">CSV с AVE, ATE20 и Score</a></p></section><section><h2>Gate и вес лосса платформы</h2><div class="table"><table class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>Вес ветвей</th>
+      <th>λ</th>
+      <th>Фолды генералиста</th>
+      <th>Фолды специалистов</th>
+      <th>AVE генералиста</th>
+      <th>AVE специалистов</th>
+      <th>Score генералиста</th>
+      <th>Score специалистов</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Gate по входу</td>
+      <td>0.00</td>
+      <td>5/5</td>
+      <td>20/20</td>
+      <td>0.33647</td>
+      <td>0.27763</td>
+      <td>0.46365</td>
+      <td>0.36400</td>
+    </tr>
+    <tr>
+      <td>Общие веса</td>
+      <td>0.00</td>
+      <td>5/5</td>
+      <td>20/20</td>
+      <td>0.34066</td>
+      <td>0.28016</td>
+      <td>0.47156</td>
+      <td>0.36867</td>
+    </tr>
+    <tr>
+      <td>Gate по входу</td>
+      <td>0.01</td>
+      <td>5/5</td>
+      <td>15/20</td>
+      <td>0.33183</td>
+      <td>—</td>
+      <td>0.46224</td>
+      <td>—</td>
+    </tr>
+    <tr>
+      <td>Gate по входу</td>
+      <td>0.10</td>
+      <td>0/5</td>
+      <td>0/20</td>
+      <td>—</td>
+      <td>—</td>
+      <td>—</td>
+      <td>—</td>
+    </tr>
+  </tbody>
+</table></div><p><a href="gate.csv">CSV с AVE, ATE20 и Score</a></p></section><section><h2>Learning rate</h2><div class="table"><table class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>LR</th>
+      <th>Фолды генералиста</th>
+      <th>Фолды специалистов</th>
+      <th>AVE генералиста</th>
+      <th>AVE специалистов</th>
+      <th>Score генералиста</th>
+      <th>Score специалистов</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>0.0003</td>
+      <td>0/5</td>
+      <td>0/20</td>
+      <td>—</td>
+      <td>—</td>
+      <td>—</td>
+      <td>—</td>
+    </tr>
+    <tr>
+      <td>0.0010</td>
+      <td>5/5</td>
+      <td>20/20</td>
+      <td>0.33647</td>
+      <td>0.27763</td>
+      <td>0.46365</td>
+      <td>0.364</td>
+    </tr>
+    <tr>
+      <td>0.0030</td>
+      <td>0/5</td>
+      <td>0/20</td>
+      <td>—</td>
+      <td>—</td>
+      <td>—</td>
+      <td>—</td>
+    </tr>
+  </tbody>
+</table></div><p><a href="learning_rate.csv">CSV с AVE, ATE20 и Score</a></p></section><section><h2>Бюджет обучения</h2><div class="table"><table class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>Шаги</th>
+      <th>Фолды генералиста</th>
+      <th>Фолды специалистов</th>
+      <th>AVE генералиста</th>
+      <th>AVE специалистов</th>
+      <th>Score генералиста</th>
+      <th>Score специалистов</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>20000</td>
+      <td>5/5</td>
+      <td>20/20</td>
+      <td>0.35063</td>
+      <td>0.28003</td>
+      <td>0.49125</td>
+      <td>0.37421</td>
+    </tr>
+    <tr>
+      <td>40000</td>
+      <td>5/5</td>
+      <td>20/20</td>
+      <td>0.33647</td>
+      <td>0.27763</td>
+      <td>0.46365</td>
+      <td>0.36400</td>
+    </tr>
+    <tr>
+      <td>60000</td>
+      <td>5/5</td>
+      <td>20/20</td>
+      <td>0.32174</td>
+      <td>0.27727</td>
+      <td>0.43856</td>
+      <td>0.36440</td>
+    </tr>
+  </tbody>
+</table></div><p><a href="steps.csv">CSV с AVE, ATE20 и Score</a></p></section>
+<section id="comparison"><h2>Генералист и специалисты на одной архитектуре</h2><p>Выбор модели будет сделан после оценки всех архитектур на одинаковых фолдах.</p><div class="table"></div></section>
+<section id="seeds"><h2>Чувствительность к seed обучения</h2><p>Разбиение, архитектура и бюджет фиксированы. В таблице показан разброс по полным CV-прогонам.</p>
+<div class="table"><p>Проверка разных seed запустится после выбора архитектуры.</p></div><p><a href="seed-results.csv">Метрики по seed</a> · <a href="seed-folds.csv">Метрики по фолдам</a></p></section>
+<p><a href="evaluation.json">Протокол</a> · <a href="ablation-deltas.csv">Парные 95% ДИ</a></p></main></html>
